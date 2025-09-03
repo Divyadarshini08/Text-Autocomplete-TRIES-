@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Animated Autocomplete</title>
+<style>
+body {
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    background: linear-gradient(to right, #34777e, #00f2fe);
+    font-family: 'Poppins', sans-serif;
+}
+h1 {
+    margin-top: 60px;
+    color: #00363b;
+    text-align: center;
+}
+.autocomplete-container {
+    position: relative;
+    width: 350px;
+}
+input {
+    width: 100%;
+    padding: 14px;
+    border-radius: 12px;
+    border: none;
+    outline: none;
+    font-size: 18px;
+    color: #333;
+    background: rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+}
+input:focus {
+    background: rgba(255, 255, 255, 0.5);
+    box-shadow: 0 4px 30px rgba(0,0,0,0.2);
+}
+.suggestions {
+   position: absolute;
+    top: 150px;
+    margin-top: 6px; /* Add this line */
+    width: 100%;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    max-height: 250px;
+    overflow-y: auto;
+    display: none;
+    flex-direction: column;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    animation: slideDown 0.3s ease;
+    z-index: 10;
+}
+@keyframes slideDown {
+    from {opacity: 0; transform: translateY(-10px);}
+    to {opacity: 1; transform: translateY(0);}
+}
+.suggestion {
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+    font-size: 16px;
+}
+.suggestion:hover {
+    background: rgba(0,0,0,0.05);
+    transform: scale(1.02);
+}
+.highlight {
+    font-weight: bold;
+    color: #4facfe;
+}
+</style>
+</head>
+<body>
+
+<div class="autocomplete-container">
+    <h1>Text-AutoComplete</h1>
+    <input type="text" id="search" placeholder="Start typing a word...">
+    <div class="suggestions" id="suggestions"></div>
+</div>
+
+<script>
+const input = document.getElementById('search');
+const suggestionsBox = document.getElementById('suggestions');
+
+input.addEventListener('input', () => {
+    const query = input.value.toLowerCase();
+    suggestionsBox.innerHTML = '';
+    if(query === '') { 
+        suggestionsBox.style.display = 'none'; 
+        return; 
+    }
+
+    // Call Java Spring Boot backend
+    fetch(`/autocomplete?prefix=${query}`)
+        .then(response => response.json())
+        .then(data => {
+            if(data.length === 0) { 
+                suggestionsBox.style.display = 'none'; 
+                return; 
+            }
+
+            data.forEach(word => {
+                const div = document.createElement('div');
+                div.className = 'suggestion';
+                // Highlight prefix
+                const prefix = `<span class="highlight">${word.slice(0, query.length)}</span>`;
+                const rest = word.slice(query.length);
+                div.innerHTML = prefix + rest;
+
+                div.addEventListener('click', () => {
+                    input.value = word;
+                    suggestionsBox.style.display = 'none';
+                });
+                suggestionsBox.appendChild(div);
+            });
+            suggestionsBox.style.display = 'flex';
+        })
+        .catch(err => console.error("Fetch error:", err));
+});
+
+document.addEventListener('click', (e) => {
+    if(!e.target.closest('.autocomplete-container')){
+        suggestionsBox.style.display = 'none';
+    }
+});
+</script>
+
+</body>
+</html>
